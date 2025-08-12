@@ -6,7 +6,7 @@ import os
 # La URL de la página que vamos a revisar.
 URL = "https://immi.homeaffairs.gov.au/what-we-do/whm-program/status-of-country-caps"
 # El país que nos interesa. ¡Asegúrate de que coincide con el texto de la web!
-PAIS_OBJETIVO = "Spain"
+PAIS_OBJETIVO = "Argentina"
 # El estado que estamos esperando.
 ESTADO_DESEADO = "Open"
 
