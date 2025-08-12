@@ -6,14 +6,46 @@ import os
 # La URL de la página que vamos a revisar.
 URL = "https://immi.homeaffairs.gov.au/what-we-do/whm-program/status-of-country-caps"
 # El país que nos interesa. ¡Asegúrate de que coincide con el texto de la web!
-PAIS_OBJETIVO = "Argentina"
+PAIS_OBJETIVO = "Spain"
 # El estado que estamos esperando.
 ESTADO_DESEADO = "Open"
 
-# --- NOTIFICACIÓN (se configurará más adelante) ---
-# Usaremos "Secrets" de GitHub para guardar la URL de notificación de forma segura.
-# Si la variable de entorno IFTTT_WEBHOOK_URL existe, la usaremos.
+
+# --- CONFIGURACIÓN DE GITHUB ACTIONS (se obtiene del entorno) ---
 IFTTT_WEBHOOK_URL = os.environ.get("IFTTT_WEBHOOK_URL")
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY")
+# El workflow ID es el nombre del archivo yml, o un ID numérico.
+# Usar el nombre del archivo es más robusto si lo pasamos desde el workflow.
+# El workflow_id puede ser el nombre del fichero, por ejemplo 'check_visa.yml'
+WORKFLOW_FILENAME = "check_visa.yml" 
+
+def desactivar_workflow():
+    """Desactiva el workflow de GitHub Actions para evitar notificaciones repetidas."""
+    if not all([GITHUB_TOKEN, GITHUB_REPOSITORY]):
+        print("No se encontraron las variables de entorno de GitHub. No se puede desactivar el workflow.")
+        return
+
+    print("Intentando desactivar el workflow para evitar futuras ejecuciones...")
+    # La URL de la API de GitHub para desactivar un workflow
+    # La API requiere el ID del workflow o el nombre del archivo .yml
+    # Ejemplo de GITHUB_REPOSITORY: "TuUsuario/TuRepositorio"
+    url_api = f"https://api.github.com/repos/{GITHUB_REPOSITORY}/actions/workflows/{WORKFLOW_FILENAME}/disable"
+    
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+    
+    response = requests.put(url_api, headers=headers)
+    
+    if response.status_code == 204: # 204 No Content es la respuesta de éxito para esta acción
+        print("¡Workflow desactivado con éxito! No recibirás más notificaciones.")
+    else:
+        print(f"Error al desactivar el workflow. Código de estado: {response.status_code}")
+        print(f"Respuesta: {response.text}")
+        
 
 def enviar_notificacion(mensaje):
     """Envía una notificación si la URL del webhook está configurada."""
@@ -61,6 +93,8 @@ def chequear_estado_visa():
                     print(f"¡¡¡ALERTA!!! El estado para {PAIS_OBJETIVO} es '{estado_actual}'.")
                     mensaje = f"La visa de Australia para {PAIS_OBJETIVO} está ABIERTA!"
                     enviar_notificacion(mensaje)
+                    # ¡Llamamos a la función para desactivar el workflow!
+                    desactivar_workflow()
                 else:
                     print(f"El estado sigue siendo '{estado_actual}'. Volveremos a intentarlo más tarde.")
                 break # Salimos del bucle una vez que encontramos España
@@ -73,5 +107,10 @@ def chequear_estado_visa():
     except Exception as e:
         print(f"Ha ocurrido un error inesperado: {e}")
 
+
 if __name__ == "__main__":
+    WORKFLOW_FILENAME = os.path.basename(__file__).replace('.py', '.yml')
+    if os.environ.get("GITHUB_WORKFLOW"):
+        WORKFLOW_FILENAME = "check_visa.yml" # Asegurate de que este es el nombre de tu fichero de workflow
+
     chequear_estado_visa()
