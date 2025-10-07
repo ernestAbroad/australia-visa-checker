@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 
+# Comentario para que no se desactive el workflow, modificar cada 2 meses
+
 # --- CONFIGURACIÓN ---
 # La URL de la página que vamos a revisar.
 URL = "https://immi.homeaffairs.gov.au/what-we-do/whm-program/status-of-country-caps"
